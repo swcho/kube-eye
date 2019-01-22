@@ -13,7 +13,7 @@ const routes: AsyncRouteProps[] = [
     path: '/',
     exact: true,
     component: asyncComponent({
-      loader: () => import('./Home'), // required
+      loader: () => import('./HomePage'), // required
       Placeholder: () => <div>...LOADING...</div>, // this is optional, just returns null by default
     }),
   },
@@ -22,22 +22,6 @@ const routes: AsyncRouteProps[] = [
     exact: true,
     component: asyncComponent({
       loader: () => import('./About'), // required
-      Placeholder: () => <div>...LOADING...</div>, // this is optional, just returns null by default
-    }),
-  },
-  {
-    path: '/posts',
-    exact: true,
-    component: asyncComponent({
-      loader: () => import('./PostListPage'), // required
-      Placeholder: () => <div>...LOADING...</div>, // this is optional, just returns null by default
-    }),
-  },
-  {
-    path: '/posts/:postId',
-    exact: true,
-    component: asyncComponent({
-      loader: () => import('./PostPage'), // required
       Placeholder: () => <div>...LOADING...</div>, // this is optional, just returns null by default
     }),
   },
