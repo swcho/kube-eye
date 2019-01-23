@@ -4,9 +4,13 @@ import { V1beta1CronJobList, V1beta1Ingress, V1Deployment, V1DeploymentList, V1H
 import { WebSocketHandler } from '@kubernetes/client-node/dist/web-socket-handler';
 import { makeQuery } from './utils';
 
-const HOST = 'http://localhost:8080';
+const HOST = typeof window === 'undefined' ? 'http://localhost:8080' : '/api/kube';
 
 const makeBaseUrl = (hostPrefix?: string) => hostPrefix || HOST;
+
+let NAMESPACE = 'default';
+
+export const setNamespace = (namespace: string) => NAMESPACE = namespace;
 
 type KubeObject = {
   metadata: V1ObjectMeta;
@@ -51,10 +55,10 @@ export type ExecParams = {
 };
 
 export const kubeApi = ({
-    namespace,
+    namespace = NAMESPACE,
     hostPrefix,
     token,
-  }: kubeApi.Params) => {
+  }: kubeApi.Params = { namespace: NAMESPACE }) => {
   const config: RequestInit = {
     headers: {
       Accept: 'application/json',

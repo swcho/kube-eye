@@ -6,7 +6,11 @@ export type RouteParams = {
   postId: string;
 };
 
-export type InitialCtx = Ctx<RouteParams>;
+export type ServerCtx = {
+  namespace: string;
+};
+
+export type InitialCtx = Ctx<RouteParams> & ServerCtx;
 
 const routes: AsyncRouteProps[] = [
   {

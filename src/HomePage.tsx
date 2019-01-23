@@ -18,7 +18,10 @@ class Home extends Component<Home.Props> {
   private api: ReturnType<typeof kubeApi> | undefined;
 
   static async getInitialProps(props: InitialCtx): Promise<Home.OwnProps> {
-    const api = kubeApi({ namespace: 'swtest' });
+    const {
+      namespace
+    } = props;
+    const api = kubeApi({ namespace });
     const podList = await api.pods().list();
     const serviceList = await api.services().list();
     const replicaSetList = await api.replicaSets().list();

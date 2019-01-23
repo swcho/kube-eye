@@ -1,8 +1,11 @@
 import { render } from '@jaredpalmer/after';
+import * as k8s from '@kubernetes/client-node';
 import express from 'express';
+import httpProxyMiddleware from 'http-proxy-middleware';
 import * as React from 'react';
 import * as ReactDOMServer from 'react-dom/server';
 import routes from './routes';
+import { setNamespace } from './services/kube';
 import { StyleProvider } from './StyleProvider';
 
 if (!process.env.RAZZLE_ASSETS_MANIFEST) {
@@ -25,9 +28,31 @@ function makeAssetTags(asset: any, name: string) {
 }
 
 const server = express();
+
+const kc = new k8s.KubeConfig();
+kc.loadFromDefault();
+const contextName = kc.getCurrentContext();
+const context = kc.getContextObject(contextName);
+const namespace = context && context.namespace;
+if (namespace) {
+  setNamespace(namespace);
+}
+
 server
   .disable('x-powered-by')
   .use(express.static(process.env.RAZZLE_PUBLIC_DIR || 'static'))
+  .use('/api/kube', httpProxyMiddleware({
+    target: 'http://localhost:8080',
+    pathRewrite: {
+      ['^/api/kube']: '',
+    },
+    logLevel: 'debug',
+    changeOrigin: true,
+    secure: false,
+    // onProxyReq: (proxyReq) => {
+    //   proxyReq.setHeader('Authentication', `Beare ${user.token}`);
+    // }
+  }))
   .get('/*', async (req, res) => {
     const css: Array<{ id: string; css: string; }> = [];
     const insertCss = (...styleList: any[]) => styleList.forEach((style) => {
@@ -41,6 +66,7 @@ server
         });
       }
     });
+    console.log(namespace);
     const html = await render({
       req,
       res,
@@ -49,14 +75,18 @@ server
       // Anything else you add here will be made available
       // within getInitialProps(ctx)
       // e.g a redux store...
-      // customThing: 'thing',
-      customRenderer: (element: React.ReactElement<any>) => ({
-        html: ReactDOMServer.renderToString((
-          <StyleProvider insertCss={insertCss}>
-            {element}
-          </StyleProvider>
-        ))
-      }),
+      customRenderer: (element) => {
+        return {
+          html: ReactDOMServer.renderToString((
+            <StyleProvider insertCss={insertCss}>
+              {element}
+            </StyleProvider>
+          ))
+        };
+      },
+      ...{
+        namespace
+      }
     });
     console.log(req.url);
     const htmlWithCommonCss = (html || '')
