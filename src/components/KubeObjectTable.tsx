@@ -13,49 +13,61 @@ export type KubeObjectList<T extends KubeObject> = {
   items: T[];
 };
 
+const renderName = <T extends KubeObject>(items: T[]) => (index: number) => {
+  const name = items[index].metadata.name;
+  return (
+    <Cell>
+      <React.Fragment>
+        <Button icon="clipboard" onClick={() => copyToClipboard(name)}/>
+      </React.Fragment>
+      {name}
+    </Cell>
+  );
+};
+
+const renderStringList = (strs: string[]) => {
+  return (
+    <select>
+      {strs.map((str, i) => <option key={i}>{str}</option>)}
+    </select>
+  );
+};
+
+const renderLabels = <T extends KubeObject>(items: T[]) => (index: number) => {
+  const labels = items[index].metadata.labels;
+  const contents = Object.keys(labels).map((key) => `${key}: ${labels[key]}`);
+  return (
+    <Cell interactive={false} wrapText={false}>{renderStringList(contents)}</Cell>
+  );
+};
+
+const renderAnnots = <T extends KubeObject>(items: T[]) => (index: number) => {
+  const annotations = items[index].metadata.annotations;
+  const contents = annotations ? Object.keys(annotations).map((key) => `${key}: ${annotations[key]}`) : [];
+  return (
+    <Cell>{renderStringList(contents)}</Cell>
+  );
+};
+
+const renderButtons = <T extends KubeObject>(props: KubeObjectTable.Props<T>) => (index: number) => {
+  const {
+    list, onDelete, onExec, onLog,
+  } = props;
+  const kubeObj = list.items[index];
+  return (
+    <Cell>
+      <React.Fragment>
+        <ButtonGroup>
+          <Button small={true} icon="trash" onClick={() => onDelete(kubeObj)}/>
+          {onExec && <Button small={true} icon="application" onClick={() => onExec(kubeObj)}/>}
+          {onLog && <Button small={true} icon="pulse" onClick={() => onLog(kubeObj)}/>}
+        </ButtonGroup>
+      </React.Fragment>
+    </Cell>
+  );
+};
+
 export class KubeObjectTable<T extends KubeObject> extends React.Component<KubeObjectTable.Props<T>> {
-  static renderName = <T extends KubeObject>(items: T[]) => (index: number) => {
-    const name = items[index].metadata.name;
-    return (
-      <Cell>
-        <React.Fragment>
-          <Button icon="clipboard" onClick={() => copyToClipboard(name)}/>
-        </React.Fragment>
-        {name}
-      </Cell>
-    );
-  }
-
-  static renderLabels = <T extends KubeObject>(items: T[]) => (index: number) => {
-    return (
-      <Cell>{JSON.stringify(items[index].metadata.labels, null, 2)}</Cell>
-    );
-  }
-
-  static renderAnnots = <T extends KubeObject>(items: T[]) => (index: number) => {
-    return (
-      <Cell>{JSON.stringify(items[index].metadata.annotations, null, 2)}</Cell>
-    );
-  }
-
-  static renderButtons = <T extends KubeObject>(props: KubeObjectTable.Props<T>) => (index: number) => {
-    const {
-      list, onDelete, onExec, onLog,
-    } = props;
-    const kubeObj = list.items[index];
-    return (
-      <Cell>
-        <React.Fragment>
-          <ButtonGroup>
-            <Button small={true} icon="trash" onClick={() => onDelete(kubeObj)}/>
-            {onExec && <Button small={true} icon="application" onClick={() => onExec(kubeObj)}/>}
-            {onLog && <Button small={true} icon="pulse" onClick={() => onLog(kubeObj)}/>}
-          </ButtonGroup>
-        </React.Fragment>
-      </Cell>
-    );
-  }
-
   render() {
       const {
         list,
@@ -65,17 +77,17 @@ export class KubeObjectTable<T extends KubeObject> extends React.Component<KubeO
         <Column
           key="Name"
           name="Name"
-          cellRenderer={KubeObjectTable.renderName(list.items)}
+          cellRenderer={renderName(list.items)}
         />,
         <Column
           key="Labels"
           name="Labels"
-          cellRenderer={KubeObjectTable.renderLabels(list.items)}
+          cellRenderer={renderLabels(list.items)}
         />,
         <Column
           key="Annot."
           name="Annot."
-          cellRenderer={KubeObjectTable.renderAnnots(list.items)}
+          cellRenderer={renderAnnots(list.items)}
         />,
       ];
       if (children) {
@@ -85,7 +97,7 @@ export class KubeObjectTable<T extends KubeObject> extends React.Component<KubeO
         <Column
           key="btns"
           name=""
-          cellRenderer={KubeObjectTable.renderButtons(this.props)}
+          cellRenderer={renderButtons(this.props)}
         />
       ));
       return (

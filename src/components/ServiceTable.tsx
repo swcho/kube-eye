@@ -3,6 +3,11 @@ import { V1Service, V1ServiceList } from '@kubernetes/client-node';
 import * as React from 'react';
 import { KubeObjectTable } from './KubeObjectTable';
 
+const renderType = (items: V1Service[]) => (index: number) => {
+  const item = items[index];
+  return <Cell>{item.spec.type}</Cell>;
+};
+
 const renderClusterIP = (items: V1Service[]) => (index: number) => {
   const item = items[index];
   return <Cell>{item.spec.clusterIP}</Cell>;
@@ -52,6 +57,11 @@ export class ServiceTable extends React.Component<ServiceTable.Props> {
   render() {
     const { list } = this.props;
     const cols = [
+      <Column
+        key="type"
+        name="Type"
+        cellRenderer={renderType(list.items)}
+      />,
       <Column
         key="cip"
         name="Cluster IP"
