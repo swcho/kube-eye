@@ -87,7 +87,7 @@ server
         namespace
       }
     });
-    console.log(assets, css);
+    // console.log(assets, css);
     const htmlWithCommonCss = (html || '')
       .replace(
         '</head>', 
