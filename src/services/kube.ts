@@ -96,12 +96,17 @@ export type LogParams = {
 
 export type ExecParams = {
   container?: string;
-  command: string;
+  command: string | string[];
   stdin?: boolean;
   stdout?: boolean;
   stderr?: boolean;
   tty?: boolean;
 };
+
+const StdinStream = 0;
+const StdoutStream = 1;
+const StderrStream = 2;
+const StatusStream = 3;
 
 export const kubeApi = (
   { namespace = NAMESPACE, hostPrefix, token }: kubeApi.Params = {
@@ -161,8 +166,6 @@ export const kubeApi = (
         exec(
           pod: V1Pod,
           params: ExecParams,
-          textHandler: ((text: string) => boolean) | null,
-          binaryHandler: ((stream: number, buff: Buffer) => boolean) | null
         ) {
           // tslint:disable-next-line
           // const url = `wss://${location.hostname}${baseUrl}/api/v1/namespaces/${namespace}/pods/${pod.metadata.name}/exec${makeQuery(params)}`;
@@ -176,41 +179,13 @@ export const kubeApi = (
           //   .then((r) => r.text());
 
           const protocols = [
-            'v4.channel.k8s.io',
-            'v3.channel.k8s.io',
-            'v2.channel.k8s.io',
-            'channel.k8s.io'
+            // 'v4.channel.k8s.io',
+            // 'v3.channel.k8s.io',
+            // 'v2.channel.k8s.io',
+            // 'channel.k8s.io'
+            'base64.channel.k8s.io',
           ];
-          return new Promise((resolve, reject) => {
-            const client = new WebSocket(url.replace(/^http/, 'ws'), protocols);
-            let resolved = false;
-
-            client.onopen = () => {
-              resolved = true;
-              resolve(client);
-            };
-
-            client.onerror = (err) => {
-              if (!resolved) {
-                reject(err);
-              }
-            };
-
-            client.onmessage = ({ data }) => {
-              // TODO: support ArrayBuffer and Buffer[] data types?
-              console.log(data);
-              if (typeof data === 'string') {
-                if (textHandler && !textHandler(data)) {
-                  client.close();
-                }
-              } else if (data instanceof Buffer) {
-                const streamNum = data.readInt8(0);
-                if (binaryHandler && !binaryHandler(streamNum, data.slice(1))) {
-                  client.close();
-                }
-              }
-            };
-          });
+          return new WebSocket(url.replace(/^http/, 'ws'), protocols);
         },
         shell(pod: V1Pod) {
           return fetch(
