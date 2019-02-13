@@ -28,7 +28,6 @@ class LogView extends React.Component<LogView.Props, {
     return (
       <div>
         <Overlay isOpen={true}>
-          {/* <TextArea large={true} value={logs}/> */}
           <div className={S.LogView}>
             <div className={S.inner}>
               <pre ref={(el) => this.elLog = el}>

@@ -5,6 +5,7 @@ import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
 import React, { Component } from 'react';
 import { DeploymentTable } from './components/DeploymentTable';
+import ExecView from './components/ExecView';
 import LogView from './components/LogView';
 import { PodTable } from './components/PodTable';
 import { ReplicaSetTable } from './components/ReplicaSetTable';
@@ -18,6 +19,7 @@ import { kubeApi } from './services/kube';
 class Home extends Component<Home.Props, {
   urlYaml: string;
   podForLog?: V1Pod;
+  podForExec?: V1Pod;
 }> {
 
   private api: ReturnType<typeof kubeApi> | undefined;
@@ -125,6 +127,7 @@ class Home extends Component<Home.Props, {
         pods={podList}
         onDelete={(pod) => this.handlePodDelete(pod as any)}
         onLog={(podForLog) => this.setState({ podForLog })}
+        onExec={(podForExec) => this.setState({ podForExec })}
       />
     );
   }
@@ -154,17 +157,27 @@ class Home extends Component<Home.Props, {
     );
   }
 
+  renderExecView() {
+    const {
+      podForExec,
+    } = this.state;
+    return this.api && podForExec && (
+      <ExecView
+        api={this.api}
+        pod={podForExec}
+        onClose={() => this.setState({ podForExec: undefined })}
+      />
+    );
+  }
+
   render() {
     const {
-      podList,
-      serviceList,
       replicaSetList,
       statefulSetList,
       deploymentList,
     } = this.props;
     const {
       urlYaml,
-      podForLog,
     } = this.state;
     // console.log('render', this.props);
     return (
@@ -190,6 +203,7 @@ class Home extends Component<Home.Props, {
         <h4>Deployments</h4>
         {deploymentList && <DeploymentTable list={deploymentList} onDelete={() => console.log}/>}
         {this.renderLogView()}
+        {this.renderExecView()}
       </div>
     );
   }
