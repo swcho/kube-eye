@@ -66,7 +66,6 @@ server
         });
       }
     });
-    console.log(namespace);
     const html = await render({
       req,
       res,
@@ -88,7 +87,7 @@ server
         namespace
       }
     });
-    console.log(req.url);
+    console.log(assets, css);
     const htmlWithCommonCss = (html || '')
       .replace(
         '</head>', 

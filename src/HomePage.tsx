@@ -5,7 +5,7 @@ import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
 import React, { Component } from 'react';
 import { DeploymentTable } from './components/DeploymentTable';
-import { LogView } from './components/LogView';
+import LogView from './components/LogView';
 import { PodTable } from './components/PodTable';
 import { ReplicaSetTable } from './components/ReplicaSetTable';
 import { ServiceTable } from './components/ServiceTable';
@@ -141,6 +141,19 @@ class Home extends Component<Home.Props, {
     );
   }
 
+  renderLogView() {
+    const {
+      podForLog,
+    } = this.state;
+    return this.api && podForLog && (
+      <LogView
+        api={this.api}
+        pod={podForLog}
+        onClose={() => this.setState({ podForLog: undefined })}
+      />
+    );
+  }
+
   render() {
     const {
       podList,
@@ -175,8 +188,8 @@ class Home extends Component<Home.Props, {
         <h4>Stateful sets</h4>
         {statefulSetList && <StatefullSetTable statefulSetList={statefulSetList}/>}
         <h4>Deployments</h4>
-        {deploymentList && <DeploymentTable list={deploymentList} onDelete={() => {}}/>}
-        {/* {this.api && podForLog && <LogView api={this.api} pod={podForLog}/>} */}
+        {deploymentList && <DeploymentTable list={deploymentList} onDelete={() => console.log}/>}
+        {this.renderLogView()}
       </div>
     );
   }
@@ -185,7 +198,6 @@ class Home extends Component<Home.Props, {
     const {
       namespace,
     } = this.props;
-    console.log('componentDidMount', namespace);
     this.api = kubeApi({ namespace });
     const podForLog = this.props.podList.items[1];
     // this.setState({ podForLog });

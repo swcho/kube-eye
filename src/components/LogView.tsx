@@ -1,17 +1,27 @@
 
-import { Overlay, TextArea } from '@blueprintjs/core';
+import { Button, Overlay, TextArea } from '@blueprintjs/core';
 import { V1Pod } from '@kubernetes/client-node';
+import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as React from 'react';
 import { kubeApi } from '../services/kube';
+import S from './LogView.less';
 
-export class LogView extends React.Component<LogView.Props, {
+class LogView extends React.Component<LogView.Props, {
   logs: string;
 }> {
+
+  private reader: ReadableStreamReader | undefined;
+
+  private elLog: HTMLPreElement | undefined | null;
   constructor(props: LogView.Props) {
     super(props);
     this.state = { logs: '' };
   }
+
   render() {
+    const {
+      onClose,
+    } = this.props;
     const {
       logs,
     } = this.state;
@@ -19,9 +29,18 @@ export class LogView extends React.Component<LogView.Props, {
       <div>
         <Overlay isOpen={true}>
           {/* <TextArea large={true} value={logs}/> */}
-          <pre>
-            {logs}
-          </pre>
+          <div className={S.LogView}>
+            <div className={S.inner}>
+              <pre ref={(el) => this.elLog = el}>
+                {logs}
+              </pre>
+              <Button
+                onClick={onClose}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
         </Overlay>
       </div>
     );
@@ -38,11 +57,26 @@ export class LogView extends React.Component<LogView.Props, {
     if (api) {
       await api.pods().log(
         pod,
-        (text) => {
-          this.setState({ logs: logs + text});
+        (reader) => {
+          this.reader = reader;
+        },
+        (logs) => {
+          this.setState({ logs });
         },
         {follow: true}
       );
+    }
+  }
+
+  componentDidUpdate() {
+    if (this.elLog) {
+      this.elLog.scrollTo({ top: this.elLog.scrollHeight });
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.reader) {
+      this.reader.cancel();
     }
   }
 }
@@ -51,5 +85,8 @@ export namespace LogView {
   export type Props = {
     api: ReturnType<typeof kubeApi>;
     pod: V1Pod;
+    onClose: () => void;
   };
 }
+
+export default withStyles(S)(LogView);

@@ -4,7 +4,8 @@ import { V1beta1CronJobList, V1beta1Ingress, V1Deployment, V1DeploymentList, V1H
 import { WebSocketHandler } from '@kubernetes/client-node/dist/web-socket-handler';
 import { makeQuery } from './utils';
 
-const HOST = typeof window === 'undefined' ? 'http://localhost:8080' : '/api/kube';
+// const HOST = typeof window === 'undefined' ? 'http://localhost:8080' : '/api/kube';
+const HOST = 'http://localhost:8080';
 
 const makeBaseUrl = (hostPrefix?: string) => hostPrefix || HOST;
 
@@ -95,17 +96,24 @@ export const kubeApi = ({
       const baseUrlPods = `${baseUrl}/api/v1/namespaces/${namespace}/pods`;
       return {
         ...CRUD<V1Pod>(baseUrlPods, config),
-        async log(pod: V1Pod, cb: (text: string) => void, params: LogParams = {}) {
+        async log(
+            pod: V1Pod,
+            cbResponse: (resp: ReadableStreamReader) => void,
+            cb: (text: string) => void,
+            params: LogParams = {}) {
           const response = await fetch(`${baseUrlPods}/${pod.metadata.name}/log${makeQuery(params)}`, config);
           if (response.body) {
             const reader = response.body.getReader();
+            cbResponse(reader);
             const decoder = new TextDecoder();
+            let text = '';
             while (true) {
               const result = await reader.read();
               if (!result.done) {
                 const chunk = decoder.decode(result.value || new Uint8Array(), {stream: !result.done});
-                console.log('chunk', chunk.length);
-                cb(chunk);
+                text = text + chunk;
+                cb(text);
+                continue;
               }
               break;
             }
