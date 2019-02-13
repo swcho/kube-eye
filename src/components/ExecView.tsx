@@ -28,6 +28,34 @@ class ExecView extends React.Component<ExecView.Props> {
       </div>
     );
   }
+
+  async componentDidMount() {
+    const {
+      api,
+      pod,
+    } = this.props;
+    if (api) {
+      try {
+        const container = pod.spec.containers[0].name;
+        await api.pods().exec(
+          pod,
+          {
+            container,
+            command: '/bin/bash',
+            stdin: true,
+            stdout: true,
+            stderr: true,
+            tty: true,
+          },
+          null,
+          null,
+        );
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
 }
 
 export namespace ExecView {

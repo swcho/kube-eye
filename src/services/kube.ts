@@ -68,7 +68,7 @@ export type LogParams = {
 };
 
 export type ExecParams = {
-  container: string;
+  container?: string;
   command: string;
   stdin?: boolean;
   stdout?: boolean;
@@ -123,11 +123,56 @@ export const kubeApi = ({
           return fetch(`${baseUrlPods}/${pod.metadata.name}/attach${makeQuery(params)}`, { method: 'POST', ...config})
             .then((r) => r.text());
         },
-        exec(pod: V1Pod, params: ExecParams) {
+        exec(
+          pod: V1Pod,
+          params: ExecParams,
+          textHandler: ((text: string) => boolean) | null,
+          binaryHandler: ((stream: number, buff: Buffer) => boolean) | null) {
           // tslint:disable-next-line
-          const url = `wss://${location.hostname}${baseUrl}/api/v1/namespaces/${namespace}/pods/${pod.metadata.name}/exec${makeQuery(params)}`;
-          const ws = new WebSocket(url);
-          return ws;
+          // const url = `wss://${location.hostname}${baseUrl}/api/v1/namespaces/${namespace}/pods/${pod.metadata.name}/exec${makeQuery(params)}`;
+
+          const url = `${baseUrl}/api/v1/namespaces/${namespace}/pods/${pod.metadata.name}/exec${makeQuery(params)}`;
+
+          // experimental for direct POST request without SPYD
+          // fetch(url, { method: 'POST', ...config})
+          //   .then((r) => r.text());
+
+          const protocols = [
+            'v4.channel.k8s.io',
+            'v3.channel.k8s.io',
+            'v2.channel.k8s.io',
+            'channel.k8s.io',
+          ];
+          return new Promise((resolve, reject) => {
+              const client = new WebSocket(url.replace(/^http/, 'ws'), protocols);
+              let resolved = false;
+
+              client.onopen = () => {
+                  resolved = true;
+                  resolve(client);
+              };
+
+              client.onerror = (err) => {
+                  if (!resolved) {
+                      reject(err);
+                  }
+              };
+
+              client.onmessage = ({ data }) => {
+                  // TODO: support ArrayBuffer and Buffer[] data types?
+                  console.log(data);
+                  if (typeof data === 'string') {
+                      if (textHandler && !textHandler(data)) {
+                          client.close();
+                      }
+                  } else if (data instanceof Buffer) {
+                      const streamNum = data.readInt8(0);
+                      if (binaryHandler && !binaryHandler(streamNum, data.slice(1))) {
+                          client.close();
+                      }
+                  }
+              };
+          });
         },
         shell(pod: V1Pod) {
           return fetch(`${baseUrlPods}/${pod.metadata.name}/shell`, config)
