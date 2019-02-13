@@ -1,6 +1,6 @@
-import { Button, InputGroup, Navbar, Overlay } from '@blueprintjs/core';
+import { Button, InputGroup, Navbar } from '@blueprintjs/core';
 import { InjectedProps } from '@jaredpalmer/after';
-import { V1Deployment, V1DeploymentList, V1Pod, V1PodList, V1ReplicaSet, V1ReplicaSetList, V1Role, V1RoleBinding, V1RoleBindingList, V1RoleList, V1Service, V1ServiceAccount, V1ServiceAccountList, V1ServiceList, V1StatefulSet, V1StatefulSetList } from '@kubernetes/client-node';
+import { V1DeploymentList, V1Pod, V1PodList, V1ReplicaSetList, V1RoleBindingList, V1RoleList, V1ServiceAccountList, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
 import React, { Component } from 'react';
@@ -14,18 +14,22 @@ import { RoleTable } from './components/RoleTable';
 import { ServiceAccountTable } from './components/ServiceAccountTable';
 import { ServiceTable } from './components/ServiceTable';
 import { StatefullSetTable } from './components/StatefulSetTable';
+import { YamlEditor } from './components/YamlEditor';
 import S from './HomePage.less';
 import logo from './react.svg';
 import { InitialCtx } from './routes';
 import { kubeApi } from './services/kube';
 
 class Home extends Component<Home.Props, {
+  txtYaml: string;
   urlYaml: string;
   podForLog?: V1Pod;
   podForExec?: V1Pod;
 }> {
 
   private api: ReturnType<typeof kubeApi> | undefined;
+
+  private yamlEditor: YamlEditor | undefined | null;
 
   static async getInitialProps(props: InitialCtx): Promise<Home.OwnProps> {
     const {
@@ -50,6 +54,7 @@ class Home extends Component<Home.Props, {
   constructor(props: Home.Props) {
     super(props);
     this.state = {
+      txtYaml: '',
       urlYaml: '',
     };
   }
@@ -86,11 +91,23 @@ class Home extends Component<Home.Props, {
     }
   }
 
-  private handleCreate = async () => {
+  private async getYamls(): Promise<any[]> {
     const {
       urlYaml,
     } = this.state;
-    const yamls = await this.getYaml(urlYaml);
+    if (this.yamlEditor && this.yamlEditor.editor) {
+      const txt = this.yamlEditor.editor.getValue();
+      return yaml.loadAll(txt);
+    }
+    return this.getYaml(urlYaml);
+  }
+
+  private handleCreate = async () => {
+    const {
+      txtYaml,
+      urlYaml,
+    } = this.state;
+    const yamls = await this.getYamls();
     console.log(yamls);
     for (const yaml of yamls) {
       const api = this.getAPIByKind(yaml.kind);
@@ -100,9 +117,10 @@ class Home extends Component<Home.Props, {
 
   private handleUpdate = async () => {
     const {
+      txtYaml,
       urlYaml,
     } = this.state;
-    const yamls = await this.getYaml(urlYaml);
+    const yamls = txtYaml || await this.getYaml(urlYaml);
     console.log(yamls);
     for (const yaml of yamls) {
       const api = this.getAPIByKind(yaml.kind);
@@ -115,52 +133,9 @@ class Home extends Component<Home.Props, {
     this.setState({ urlYaml });
   }
 
-  private handlePodDelete = async (pod: V1Pod) => {
-    if (this.api) {
-      await this.api.pods().del(pod);
-    }
-  }
-
-  private handleServiceDelete = async (service: V1Service) => {
-    if (this.api) {
-      await this.api.services().del(service);
-    }
-  }
-
-  private handleReplicaSetDelete = async (replicaSet: V1ReplicaSet) => {
-    if (this.api) {
-      await this.api.replicaSets().del(replicaSet);
-    }
-  }
-
-  private handleStatefulSetDelete = async (statefulSet: V1StatefulSet) => {
-    if (this.api) {
-      await this.api.statefulSets().del(statefulSet);
-    }
-  }
-
-  private handleDeploymentDelete = async (deployment: V1Deployment) => {
-    if (this.api) {
-      await this.api.deployments().del(deployment);
-    }
-  }
-
-  private handleServiceAccountDelete = async (serviceAccount: V1ServiceAccount) => {
-    if (this.api) {
-      await this.api.serviceAccounts().del(serviceAccount);
-    }
-  }
-
-  private handleRoleDelete = async (role: V1Role) => {
-    if (this.api) {
-      await this.api.roles().del(role);
-    }
-  }
-
-  private handleRoleBindingDelete = async (roleBinding: V1RoleBinding) => {
-    if (this.api) {
-      await this.api.roleBindings().del(roleBinding);
-    }
+  private handleDelete = (kind: string) => async (obj: any) => {
+    const api = this.getAPIByKind(kind);
+    await api.del(obj);
   }
 
   renderPodList() {
@@ -170,7 +145,7 @@ class Home extends Component<Home.Props, {
     return podList && (
       <PodTable
         list={podList}
-        onDelete={(pod) => this.handlePodDelete(pod as any)}
+        onDelete={this.handleDelete('Pod')}
         onLog={(podForLog) => this.setState({ podForLog })}
         onExec={(podForExec) => this.setState({ podForExec })}
       />
@@ -184,7 +159,7 @@ class Home extends Component<Home.Props, {
     return serviceList && (
       <ServiceTable
         list={serviceList}
-        onDelete={(service) => this.handleServiceDelete(service as any)}
+        onDelete={this.handleDelete('Service')}
       />
     );
   }
@@ -196,7 +171,7 @@ class Home extends Component<Home.Props, {
     return replicaSetList && (
       <ReplicaSetTable
         list={replicaSetList}
-        onDelete={(replicaSet) => this.handleReplicaSetDelete(replicaSet as any)}
+        onDelete={this.handleDelete('ReplicaSet')}
       />
     );
   }
@@ -208,7 +183,7 @@ class Home extends Component<Home.Props, {
     return statefulSetList && (
       <StatefullSetTable
         list={statefulSetList}
-        onDelete={(statefulSet) => this.handleStatefulSetDelete(statefulSet as any)}
+        onDelete={this.handleDelete('StatefulSet')}
       />
     );
   }
@@ -220,7 +195,7 @@ class Home extends Component<Home.Props, {
     return deploymentList && (
       <DeploymentTable
         list={deploymentList}
-        onDelete={(deployment) => this.handleDeploymentDelete(deployment as any)}
+        onDelete={this.handleDelete('Deployment')}
       />
     );
   }
@@ -232,7 +207,7 @@ class Home extends Component<Home.Props, {
     return serviceAccountList && (
       <ServiceAccountTable
         list={serviceAccountList}
-        onDelete={(serviceAccount) => this.handleServiceAccountDelete(serviceAccount as any)}
+        onDelete={this.handleDelete('ServiceAccount')}
       />
     );
   }
@@ -244,7 +219,7 @@ class Home extends Component<Home.Props, {
     return roleList && (
       <RoleTable
         list={roleList}
-        onDelete={(role) => this.handleRoleDelete(role as any)}
+        onDelete={this.handleDelete('Role')}
       />
     );
   }
@@ -256,7 +231,7 @@ class Home extends Component<Home.Props, {
     return roleBindingList && (
       <RoleBindingTable
         list={roleBindingList}
-        onDelete={(roleBinding) => this.handleRoleBindingDelete(roleBinding as any)}
+        onDelete={this.handleDelete('RoleBinding')}
       />
     );
   }
@@ -286,15 +261,21 @@ class Home extends Component<Home.Props, {
       />
     );
   }
-
   render() {
     const {
+      txtYaml,
       urlYaml,
     } = this.state;
     // console.log('render', this.props);
     return (
       <div className={S.Home}>
         <Navbar/>
+        <YamlEditor
+          className={S.editor}
+          value={txtYaml}
+          ref={(ref) => this.yamlEditor = ref}
+          onChange={(txtYaml) => this.setState({ txtYaml })}
+        />
         <div>
           <InputGroup
             value={urlYaml}
@@ -308,10 +289,12 @@ class Home extends Component<Home.Props, {
         {this.renderPodList()}
         <h4>Services</h4>
         {this.renderServiceList()}
-        <h4>Replica sets</h4>
+
+        {/* <h4>Replica sets</h4>
         {this.renderReplicaSetList()}
         <h4>Stateful sets</h4>
-        {this.renderStatefulSetList()}
+        {this.renderStatefulSetList()} */}
+
         <h4>Deployments</h4>
         {this.renderDeploymentList()}
 

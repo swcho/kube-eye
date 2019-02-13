@@ -59,13 +59,16 @@ module.exports = (config, { target, dev }, webpack, userOptions = {}) => {
 
   const localIdentName = '[path][name]_[local]';
 
-  const RE_VENDOR_STYLE = /(\.vendor\.less$|node_modules\/.*\.css$)/;
+  const RE_VENDOR_STYLE = /(\.vendor\.less$)/;
   config.module.rules.push({
     test: RE_VENDOR_STYLE,
     use: [
       {
         loader: MiniCssExtractPlugin.loader,
       },
+      // {
+      //   loader: require.resolve('style-loader'),
+      // },
       {
         loader: require.resolve('css-loader'),
         options: {
