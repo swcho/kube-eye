@@ -96,6 +96,9 @@ class Home extends Component<Home.Props, {
     if (kind === 'Ingress') {
       return this.api.ingresses();
     }
+    if (kind === 'StatefulSet') {
+      return this.api.statefulSets();
+    }
     if (kind === 'PersistentVolumeClaims') {
       return this.api.pvcs();
     }
@@ -315,6 +318,10 @@ class Home extends Component<Home.Props, {
         {this.renderPodList()}
         <h4>Deployments</h4>
         {this.renderDeploymentList()}
+        <h4>Replica sets</h4>
+        {this.renderReplicaSetList()}
+        <h4>Stateful sets</h4>
+        {this.renderStatefulSetList()}
 
         <h4>Services</h4>
         {this.renderServiceList()}
@@ -323,11 +330,6 @@ class Home extends Component<Home.Props, {
 
         <h4>PVCs</h4>
         {this.renderPvcList()}
-
-        {/* <h4>Replica sets</h4>
-        {this.renderReplicaSetList()}
-        <h4>Stateful sets</h4>
-        {this.renderStatefulSetList()} */}
 
         <h4>Service accounts</h4>
         {this.renderServiceAccountList()}
