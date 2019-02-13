@@ -1,11 +1,12 @@
 import { Button, InputGroup, Navbar } from '@blueprintjs/core';
 import { InjectedProps } from '@jaredpalmer/after';
-import { V1DeploymentList, V1Pod, V1PodList, V1ReplicaSetList, V1RoleBindingList, V1RoleList, V1ServiceAccountList, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
+import { V1beta1IngressList, V1DeploymentList, V1Pod, V1PodList, V1ReplicaSetList, V1RoleBindingList, V1RoleList, V1ServiceAccountList, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
 import React, { Component } from 'react';
 import { DeploymentTable } from './components/DeploymentTable';
 import ExecView from './components/ExecView';
+import { IngressTable } from './components/IngressTable';
 import LogView from './components/LogView';
 import { PodTable } from './components/PodTable';
 import { ReplicaSetTable } from './components/ReplicaSetTable';
@@ -38,6 +39,7 @@ class Home extends Component<Home.Props, {
     const api = kubeApi({ namespace });
     const podList = await api.pods().list();
     const serviceList = await api.services().list();
+    const ingressList = await api.ingresses().list();
     const replicaSetList = await api.replicaSets().list();
     const statefulSetList = await api.statefulSets().list();
     const deploymentList = await api.deployments().list();
@@ -46,7 +48,7 @@ class Home extends Component<Home.Props, {
     const roleBindingList = await api.roleBindings().list();
     return {
       namespace,
-      podList, serviceList, replicaSetList, statefulSetList, deploymentList,
+      podList, serviceList, ingressList, replicaSetList, statefulSetList, deploymentList,
       serviceAccountList, roleList, roleBindingList,
     };
   }
@@ -103,12 +105,7 @@ class Home extends Component<Home.Props, {
   }
 
   private handleCreate = async () => {
-    const {
-      txtYaml,
-      urlYaml,
-    } = this.state;
     const yamls = await this.getYamls();
-    console.log(yamls);
     for (const yaml of yamls) {
       const api = this.getAPIByKind(yaml.kind);
       await api.create(yaml);
@@ -116,12 +113,7 @@ class Home extends Component<Home.Props, {
   }
 
   private handleUpdate = async () => {
-    const {
-      txtYaml,
-      urlYaml,
-    } = this.state;
-    const yamls = txtYaml || await this.getYaml(urlYaml);
-    console.log(yamls);
+    const yamls = await this.getYamls();
     for (const yaml of yamls) {
       const api = this.getAPIByKind(yaml.kind);
       await api.update(yaml);
@@ -160,6 +152,18 @@ class Home extends Component<Home.Props, {
       <ServiceTable
         list={serviceList}
         onDelete={this.handleDelete('Service')}
+      />
+    );
+  }
+
+  renderIngressList() {
+    const {
+      ingressList,
+    } = this.props;
+    return ingressList && (
+      <IngressTable
+        list={ingressList}
+        onDelete={this.handleDelete('Ingress')}
       />
     );
   }
@@ -287,16 +291,18 @@ class Home extends Component<Home.Props, {
         </div>
         <h4>Pods</h4>
         {this.renderPodList()}
+        <h4>Deployments</h4>
+        {this.renderDeploymentList()}
+
         <h4>Services</h4>
         {this.renderServiceList()}
+        <h4>Ingress</h4>
+        {this.renderIngressList()}
 
         {/* <h4>Replica sets</h4>
         {this.renderReplicaSetList()}
         <h4>Stateful sets</h4>
         {this.renderStatefulSetList()} */}
-
-        <h4>Deployments</h4>
-        {this.renderDeploymentList()}
 
         <h4>Service accounts</h4>
         {this.renderServiceAccountList()}
@@ -326,6 +332,7 @@ namespace Home {
     namespace: string;
     podList: V1PodList
     serviceList: V1ServiceList;
+    ingressList: V1beta1IngressList;
     replicaSetList: V1ReplicaSetList;
     statefulSetList: V1StatefulSetList;
     deploymentList: V1DeploymentList;
