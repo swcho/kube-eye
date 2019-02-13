@@ -1,10 +1,11 @@
-import { Button, InputGroup, Navbar } from '@blueprintjs/core';
+import { Button, InputGroup, Navbar, Overlay } from '@blueprintjs/core';
 import { InjectedProps } from '@jaredpalmer/after';
 import { V1DeploymentList, V1Pod, V1PodList, V1ReplicaSetList, V1Service, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
 import React, { Component } from 'react';
 import { DeploymentTable } from './components/DeploymentTable';
+import { LogView } from './components/LogView';
 import { PodTable } from './components/PodTable';
 import { ReplicaSetTable } from './components/ReplicaSetTable';
 import { ServiceTable } from './components/ServiceTable';
@@ -16,6 +17,7 @@ import { kubeApi } from './services/kube';
 
 class Home extends Component<Home.Props, {
   urlYaml: string;
+  podForLog?: V1Pod;
 }> {
 
   private api: ReturnType<typeof kubeApi> | undefined;
@@ -30,7 +32,7 @@ class Home extends Component<Home.Props, {
     const replicaSetList = await api.replicaSets().list();
     const statefulSetList = await api.statefulSets().list();
     const deploymentList = await api.deployments().list();
-    return { podList, serviceList, replicaSetList, statefulSetList, deploymentList };
+    return { podList, serviceList, replicaSetList, statefulSetList, deploymentList, namespace };
   }
 
   constructor(props: Home.Props) {
@@ -122,12 +124,7 @@ class Home extends Component<Home.Props, {
       <PodTable
         pods={podList}
         onDelete={(pod) => this.handlePodDelete(pod as any)}
-        onLog={async (pod) => {
-          if (this.api) {
-            const logs = await this.api.pods().log(pod as any, {follow: true});
-            console.log(logs);
-          }
-        }}
+        onLog={(podForLog) => this.setState({ podForLog })}
       />
     );
   }
@@ -154,6 +151,7 @@ class Home extends Component<Home.Props, {
     } = this.props;
     const {
       urlYaml,
+      podForLog,
     } = this.state;
     // console.log('render', this.props);
     return (
@@ -170,25 +168,33 @@ class Home extends Component<Home.Props, {
         </div>
         <h4>Pods</h4>
         {this.renderPodList()}
-        <h4>Services</h4>
-        {this.renderServiceList()}
+        {/* <h4>Services</h4>
+        {this.renderServiceList()} */}
         <h4>Replica sets</h4>
         {replicaSetList && <ReplicaSetTable replicaSetList={replicaSetList}/>}
         <h4>Stateful sets</h4>
         {statefulSetList && <StatefullSetTable statefulSetList={statefulSetList}/>}
         <h4>Deployments</h4>
         {deploymentList && <DeploymentTable list={deploymentList} onDelete={() => {}}/>}
+        {/* {this.api && podForLog && <LogView api={this.api} pod={podForLog}/>} */}
       </div>
     );
   }
 
   componentDidMount() {
-    this.api = kubeApi({ namespace: 'swtest' });
+    const {
+      namespace,
+    } = this.props;
+    console.log('componentDidMount', namespace);
+    this.api = kubeApi({ namespace });
+    const podForLog = this.props.podList.items[1];
+    // this.setState({ podForLog });
   }
 }
 
 namespace Home {
   export type OwnProps = {
+    namespace: string;
     podList: V1PodList
     serviceList: V1ServiceList;
     replicaSetList: V1ReplicaSetList;

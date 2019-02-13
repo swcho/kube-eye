@@ -1,12 +1,12 @@
 
-import { V1DeploymentList } from '@kubernetes/client-node';
+import { V1Deployment, V1DeploymentList } from '@kubernetes/client-node';
 import * as React from 'react';
 import { KubeObjectTable } from './KubeObjectTable';
 
 export class DeploymentTable extends React.Component<DeploymentTable.Props> {
   render() {
     return (
-      <KubeObjectTable
+      <KubeObjectTable<V1Deployment>
         {...this.props}
       />
     );
@@ -16,5 +16,5 @@ export class DeploymentTable extends React.Component<DeploymentTable.Props> {
 export namespace DeploymentTable {
   export type Props = {
     list: V1DeploymentList;
-  } & KubeObjectTable.Events;
+  } & KubeObjectTable.Events<V1Deployment>;
 }

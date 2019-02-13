@@ -17,8 +17,10 @@ export class KubeObjectTable<T extends KubeObject> extends React.Component<KubeO
   static renderName = <T extends KubeObject>(items: T[]) => (index: number) => {
     const name = items[index].metadata.name;
     return (
-      <Cell onKeyPress={(e) => {console.log(e); }}>
-        <Button small={true} icon="clipboard" onClick={() => copyToClipboard(name)}/>
+      <Cell>
+        <React.Fragment>
+          <Button icon="clipboard" onClick={() => copyToClipboard(name)}/>
+        </React.Fragment>
         {name}
       </Cell>
     );
@@ -95,12 +97,12 @@ export class KubeObjectTable<T extends KubeObject> extends React.Component<KubeO
 }
 
 export namespace KubeObjectTable {
-  export type Events = {
-    onDelete: (kubeObj: KubeObject) => void;
-    onLog?: (kubeObj: KubeObject) => void;
-    onExec?: (kubeObj: KubeObject) => void;
+  export type Events<T> = {
+    onDelete: (kubeObj: T) => void;
+    onLog?: (kubeObj: T) => void;
+    onExec?: (kubeObj: T) => void;
   };
   export type Props<T extends KubeObject> = {
     list: KubeObjectList<T>;
-  } & Events;
+  } & Events<T>;
 }

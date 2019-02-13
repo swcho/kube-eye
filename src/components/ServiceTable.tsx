@@ -16,11 +16,15 @@ const renderExternalIP = (items: V1Service[]) => (index: number) => {
     status: {
       loadBalancer
     },
+    spec: {
+      ports,
+    }
   } = item;
+  const port = ports && ports[0].targetPort || '';
   return (
     <Cell>{
-      loadBalancer && loadBalancer.ingress && loadBalancer.ingress.map((ing) => {
-        return ing.ip;
+      loadBalancer && loadBalancer.ingress && loadBalancer.ingress.map((ing, i) => {
+        return <a key={i} href={`http://${ing.ip}:${port}`} target="blank">{ing.ip}</a>;
       })
     }</Cell>
   );
@@ -46,7 +50,7 @@ export class ServiceTable extends React.Component<ServiceTable.Props> {
     } = this.props;
     console.log(list.items);
     return (
-      <KubeObjectTable
+      <KubeObjectTable<V1Service>
         {...this.props}
       >
         <Column
@@ -69,5 +73,5 @@ export class ServiceTable extends React.Component<ServiceTable.Props> {
 export namespace ServiceTable {
   export type Props = {
     list: V1ServiceList;
-  } & KubeObjectTable.Events;
+  } & KubeObjectTable.Events<V1Service>;
 }

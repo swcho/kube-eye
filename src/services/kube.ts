@@ -95,11 +95,21 @@ export const kubeApi = ({
       const baseUrlPods = `${baseUrl}/api/v1/namespaces/${namespace}/pods`;
       return {
         ...CRUD<V1Pod>(baseUrlPods, config),
-        log(pod: V1Pod, params: LogParams = {}) {
-          return fetch(
-            `${baseUrlPods}/${pod.metadata.name}/log${makeQuery(params)}`,
-            config)
-            .then((r) => r.text());
+        async log(pod: V1Pod, cb: (text: string) => void, params: LogParams = {}) {
+          const response = await fetch(`${baseUrlPods}/${pod.metadata.name}/log${makeQuery(params)}`, config);
+          if (response.body) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+              const result = await reader.read();
+              if (!result.done) {
+                const chunk = decoder.decode(result.value || new Uint8Array(), {stream: !result.done});
+                console.log('chunk', chunk.length);
+                cb(chunk);
+              }
+              break;
+            }
+          }
         },
         attach(pod: V1Pod, params: ExecParams) {
           return fetch(`${baseUrlPods}/${pod.metadata.name}/attach${makeQuery(params)}`, { method: 'POST', ...config})
