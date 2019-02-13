@@ -29,7 +29,11 @@ const CRUD = <T extends KubeObject>(baseUrl: string, config: RequestInit = {}) =
       return fetch(baseUrl, config).then<ListLike<T>>((r) => r.json());
     },
     create: (item: T) => {
-      return fetch(baseUrl, { method: 'POST', ...config }).then<T>((r) => r.json());
+      if (!config.headers) {
+        config.headers = {};
+      }
+      config.headers['Content-Type'] = 'application/json';
+      return fetch(baseUrl, { method: 'POST', body: JSON.stringify(item), ...config }).then<T>((r) => r.json());
     },
     update: (item: T) => {
       // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#patch-operations
