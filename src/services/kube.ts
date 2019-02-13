@@ -20,6 +20,7 @@ import {
   V1StatefulSet,
   V1StatefulSetList
 } from '@kubernetes/client-node';
+import { V1PersistentVolumeClaim } from '@kubernetes/client-node';
 import { WebSocketHandler } from '@kubernetes/client-node/dist/web-socket-handler';
 import { makeQuery } from './utils';
 
@@ -247,6 +248,12 @@ export const kubeApi = (
     ingresses: () => {
       return CRUD<V1beta1Ingress>(
         `${baseUrl}/apis/extensions/v1beta1/namespaces/${namespace}/ingresses`,
+        config
+      );
+    },
+    pvcs: () => {
+      return CRUD<V1PersistentVolumeClaim>(
+        `${baseUrl}/api/v1/namespaces/${namespace}/persistentvolumeclaims`,
         config
       );
     }
