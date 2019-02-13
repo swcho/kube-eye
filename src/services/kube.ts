@@ -1,6 +1,25 @@
-
 // tslint:disable-next-line
-import { V1beta1CronJobList, V1beta1Ingress, V1Deployment, V1DeploymentList, V1HorizontalPodAutoscalerList, V1JobList, V1ListMeta, V1ObjectMeta, V1Pod, V1PodList, V1ReplicaSet, V1ReplicaSetList, V1Role, V1RoleBinding, V1Service, V1ServiceAccount, V1ServiceList, V1StatefulSet, V1StatefulSetList } from '@kubernetes/client-node';
+import {
+  V1beta1CronJobList,
+  V1beta1Ingress,
+  V1Deployment,
+  V1DeploymentList,
+  V1HorizontalPodAutoscalerList,
+  V1JobList,
+  V1ListMeta,
+  V1ObjectMeta,
+  V1Pod,
+  V1PodList,
+  V1ReplicaSet,
+  V1ReplicaSetList,
+  V1Role,
+  V1RoleBinding,
+  V1Service,
+  V1ServiceAccount,
+  V1ServiceList,
+  V1StatefulSet,
+  V1StatefulSetList
+} from '@kubernetes/client-node';
 import { WebSocketHandler } from '@kubernetes/client-node/dist/web-socket-handler';
 import { makeQuery } from './utils';
 
@@ -11,7 +30,7 @@ const makeBaseUrl = (hostPrefix?: string) => hostPrefix || HOST;
 
 let NAMESPACE = 'default';
 
-export const setNamespace = (namespace: string) => NAMESPACE = namespace;
+export const setNamespace = (namespace: string) => (NAMESPACE = namespace);
 
 type KubeObject = {
   metadata: V1ObjectMeta;
@@ -24,7 +43,10 @@ type ListLike<T extends KubeObject> = {
   metadata: V1ListMeta;
 };
 
-const CRUD = <T extends KubeObject>(baseUrl: string, config: RequestInit = {}) => {
+const CRUD = <T extends KubeObject>(
+  baseUrl: string,
+  config: RequestInit = {}
+) => {
   return {
     list: () => {
       return fetch(baseUrl, config).then<ListLike<T>>((r) => r.json());
@@ -34,9 +56,11 @@ const CRUD = <T extends KubeObject>(baseUrl: string, config: RequestInit = {}) =
         config.headers = {};
       }
       config.headers['Content-Type'] = 'application/json';
-      return fetch(
-        baseUrl,
-        { method: 'POST', body: JSON.stringify(item), ...config }).then<T>((r) => r.json());
+      return fetch(baseUrl, {
+        method: 'POST',
+        body: JSON.stringify(item),
+        ...config
+      }).then<T>((r) => r.json());
     },
     update: (item: T) => {
       // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#patch-operations
@@ -44,15 +68,18 @@ const CRUD = <T extends KubeObject>(baseUrl: string, config: RequestInit = {}) =
         config.headers = {};
       }
       config.headers['Content-Type'] = 'application/strategic-merge-patch+json';
-      return fetch(
-        `${baseUrl}/${item.metadata.name}`,
-        { method: 'PATCH', body: JSON.stringify(item), ...config }).then<T>((r) => r.json());
+      return fetch(`${baseUrl}/${item.metadata.name}`, {
+        method: 'PATCH',
+        body: JSON.stringify(item),
+        ...config
+      }).then<T>((r) => r.json());
     },
     del: (item: T) => {
-      return fetch(
-        `${baseUrl}/${item.metadata.name}`,
-        { method: 'DELETE', ...config }).then<T>((r) => r.json());
-    },
+      return fetch(`${baseUrl}/${item.metadata.name}`, {
+        method: 'DELETE',
+        ...config
+      }).then<T>((r) => r.json());
+    }
   };
 };
 
@@ -76,15 +103,15 @@ export type ExecParams = {
   tty?: boolean;
 };
 
-export const kubeApi = ({
-    namespace = NAMESPACE,
-    hostPrefix,
-    token,
-  }: kubeApi.Params = { namespace: NAMESPACE }) => {
+export const kubeApi = (
+  { namespace = NAMESPACE, hostPrefix, token }: kubeApi.Params = {
+    namespace: NAMESPACE
+  }
+) => {
   const config: RequestInit = {
     headers: {
-      Accept: 'application/json',
-    },
+      Accept: 'application/json'
+    }
   };
   if (config && config.headers && token) {
     config.headers['Authorization'] = `Bearer ${token}`;
@@ -97,11 +124,15 @@ export const kubeApi = ({
       return {
         ...CRUD<V1Pod>(baseUrlPods, config),
         async log(
-            pod: V1Pod,
-            cbResponse: (resp: ReadableStreamReader) => void,
-            cb: (text: string) => void,
-            params: LogParams = {}) {
-          const response = await fetch(`${baseUrlPods}/${pod.metadata.name}/log${makeQuery(params)}`, config);
+          pod: V1Pod,
+          cbResponse: (resp: ReadableStreamReader) => void,
+          cb: (text: string) => void,
+          params: LogParams = {}
+        ) {
+          const response = await fetch(
+            `${baseUrlPods}/${pod.metadata.name}/log${makeQuery(params)}`,
+            config
+          );
           if (response.body) {
             const reader = response.body.getReader();
             cbResponse(reader);
@@ -110,7 +141,9 @@ export const kubeApi = ({
             while (true) {
               const result = await reader.read();
               if (!result.done) {
-                const chunk = decoder.decode(result.value || new Uint8Array(), {stream: !result.done});
+                const chunk = decoder.decode(result.value || new Uint8Array(), {
+                  stream: !result.done
+                });
                 text = text + chunk;
                 cb(text);
                 continue;
@@ -120,18 +153,23 @@ export const kubeApi = ({
           }
         },
         attach(pod: V1Pod, params: ExecParams) {
-          return fetch(`${baseUrlPods}/${pod.metadata.name}/attach${makeQuery(params)}`, { method: 'POST', ...config})
-            .then((r) => r.text());
+          return fetch(
+            `${baseUrlPods}/${pod.metadata.name}/attach${makeQuery(params)}`,
+            { method: 'POST', ...config }
+          ).then((r) => r.text());
         },
         exec(
           pod: V1Pod,
           params: ExecParams,
           textHandler: ((text: string) => boolean) | null,
-          binaryHandler: ((stream: number, buff: Buffer) => boolean) | null) {
+          binaryHandler: ((stream: number, buff: Buffer) => boolean) | null
+        ) {
           // tslint:disable-next-line
           // const url = `wss://${location.hostname}${baseUrl}/api/v1/namespaces/${namespace}/pods/${pod.metadata.name}/exec${makeQuery(params)}`;
 
-          const url = `${baseUrl}/api/v1/namespaces/${namespace}/pods/${pod.metadata.name}/exec${makeQuery(params)}`;
+          const url = `${baseUrl}/api/v1/namespaces/${namespace}/pods/${
+            pod.metadata.name
+          }/exec${makeQuery(params)}`;
 
           // experimental for direct POST request without SPYD
           // fetch(url, { method: 'POST', ...config})
@@ -141,82 +179,114 @@ export const kubeApi = ({
             'v4.channel.k8s.io',
             'v3.channel.k8s.io',
             'v2.channel.k8s.io',
-            'channel.k8s.io',
+            'channel.k8s.io'
           ];
           return new Promise((resolve, reject) => {
-              const client = new WebSocket(url.replace(/^http/, 'ws'), protocols);
-              let resolved = false;
+            const client = new WebSocket(url.replace(/^http/, 'ws'), protocols);
+            let resolved = false;
 
-              client.onopen = () => {
-                  resolved = true;
-                  resolve(client);
-              };
+            client.onopen = () => {
+              resolved = true;
+              resolve(client);
+            };
 
-              client.onerror = (err) => {
-                  if (!resolved) {
-                      reject(err);
-                  }
-              };
+            client.onerror = (err) => {
+              if (!resolved) {
+                reject(err);
+              }
+            };
 
-              client.onmessage = ({ data }) => {
-                  // TODO: support ArrayBuffer and Buffer[] data types?
-                  console.log(data);
-                  if (typeof data === 'string') {
-                      if (textHandler && !textHandler(data)) {
-                          client.close();
-                      }
-                  } else if (data instanceof Buffer) {
-                      const streamNum = data.readInt8(0);
-                      if (binaryHandler && !binaryHandler(streamNum, data.slice(1))) {
-                          client.close();
-                      }
-                  }
-              };
+            client.onmessage = ({ data }) => {
+              // TODO: support ArrayBuffer and Buffer[] data types?
+              console.log(data);
+              if (typeof data === 'string') {
+                if (textHandler && !textHandler(data)) {
+                  client.close();
+                }
+              } else if (data instanceof Buffer) {
+                const streamNum = data.readInt8(0);
+                if (binaryHandler && !binaryHandler(streamNum, data.slice(1))) {
+                  client.close();
+                }
+              }
+            };
           });
         },
         shell(pod: V1Pod) {
-          return fetch(`${baseUrlPods}/${pod.metadata.name}/shell`, config)
-            .then((r) => r.text());
-        },
+          return fetch(
+            `${baseUrlPods}/${pod.metadata.name}/shell`,
+            config
+          ).then((r) => r.text());
+        }
       };
     },
     services: () => {
-      return CRUD<V1Service>(`${baseUrl}/api/v1/namespaces/${namespace}/services`, config);
+      return CRUD<V1Service>(
+        `${baseUrl}/api/v1/namespaces/${namespace}/services`,
+        config
+      );
     },
     replicaSets: () => {
-      return CRUD<V1ReplicaSet>(`${baseUrl}/apis/apps/v1/namespaces/${namespace}/replicasets`, config);
+      return CRUD<V1ReplicaSet>(
+        `${baseUrl}/apis/apps/v1/namespaces/${namespace}/replicasets`,
+        config
+      );
     },
     statefulSets: () => {
-      return CRUD<V1StatefulSet>(`${baseUrl}/apis/apps/v1/namespaces/${namespace}/statefulsets`, config);
+      return CRUD<V1StatefulSet>(
+        `${baseUrl}/apis/apps/v1/namespaces/${namespace}/statefulsets`,
+        config
+      );
     },
     horizontalPodAuthScalers: () => {
-      return fetch(`${baseUrl}/api/v1/namespaces/${namespace}/horizontalpodautoscalers`, config)
-        .then<V1HorizontalPodAutoscalerList>((r) => r.json());
+      return fetch(
+        `${baseUrl}/api/v1/namespaces/${namespace}/horizontalpodautoscalers`,
+        config
+      ).then<V1HorizontalPodAutoscalerList>((r) => r.json());
     },
     jobs: () => {
-      return fetch(`${baseUrl}/api/v1/namespaces/${namespace}/jobs`, config)
-        .then<V1JobList>((r) => r.json());
+      return fetch(
+        `${baseUrl}/api/v1/namespaces/${namespace}/jobs`,
+        config
+      ).then<V1JobList>((r) => r.json());
     },
     cronJobs: () => {
-      return fetch(`${baseUrl}/api/v1/namespaces/${namespace}/cronjobs`, config)
-        .then<V1beta1CronJobList>((r) => r.json());
+      return fetch(
+        `${baseUrl}/api/v1/namespaces/${namespace}/cronjobs`,
+        config
+      ).then<V1beta1CronJobList>((r) => r.json());
     },
     deployments: () => {
-      return CRUD<V1Deployment>(`${baseUrl}/apis/apps/v1/namespaces/${namespace}/deployments`, config);
+      return CRUD<V1Deployment>(
+        `${baseUrl}/apis/apps/v1/namespaces/${namespace}/deployments`,
+        config
+      );
     },
     serviceAccounts: () => {
-      return CRUD<V1ServiceAccount>(`${baseUrl}/api/v1/namespaces/${namespace}/serviceaccounts`, config);
+      return CRUD<V1ServiceAccount>(
+        `${baseUrl}/api/v1/namespaces/${namespace}/serviceaccounts`,
+        config
+      );
     },
     roles: () => {
-      return CRUD<V1Role>(`${baseUrl}/apis/rbac.authorization.k8s.io/v1beta1/namespaces/${namespace}/roles`, config);
+      return CRUD<V1Role>(
+        `${baseUrl}/apis/rbac.authorization.k8s.io/v1beta1/namespaces/${namespace}/roles`,
+        config
+      );
     },
     roleBindings: () => {
       // tslint:disable-next-line
-      return CRUD<V1RoleBinding>(`${baseUrl}/apis/rbac.authorization.k8s.io/v1beta1/namespaces/${namespace}/rolebindings`, config);
+      return CRUD<V1RoleBinding>(
+        `${baseUrl}/apis/rbac.authorization.k8s.io/v1beta1/namespaces/${namespace}/rolebindings`,
+        config
+      );
     },
     ingresses: () => {
-      return CRUD<V1beta1Ingress>(`${baseUrl}/apis/extensions/v1beta1/namespaces/${namespace}/ingresses`, config);
-    },
+      return CRUD<V1beta1Ingress>(
+        `${baseUrl}/apis/extensions/v1beta1/namespaces/${namespace}/ingresses`,
+        config
+      );
+    }
   };
 };
 
