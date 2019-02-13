@@ -55,6 +55,17 @@ const CRUD = <T extends KubeObject>(baseUrl: string, config: RequestInit = {}) =
   };
 };
 
+export type LogParams = {
+  container?: string;
+  follow?: boolean;
+  limitBytes?: number;
+  pretty?: string;
+  previous?: boolean;
+  sinceSeconds?: number;
+  tailLines?: number;
+  timestamps?: boolean;
+};
+
 export type ExecParams = {
   container: string;
   command: string;
@@ -84,8 +95,10 @@ export const kubeApi = ({
       const baseUrlPods = `${baseUrl}/api/v1/namespaces/${namespace}/pods`;
       return {
         ...CRUD<V1Pod>(baseUrlPods, config),
-        log(pod: V1Pod) {
-          return fetch(`${baseUrlPods}/${pod.metadata.name}/log`, config)
+        log(pod: V1Pod, params: LogParams = {}) {
+          return fetch(
+            `${baseUrlPods}/${pod.metadata.name}/log${makeQuery(params)}`,
+            config)
             .then((r) => r.text());
         },
         attach(pod: V1Pod, params: ExecParams) {

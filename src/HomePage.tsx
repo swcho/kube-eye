@@ -1,9 +1,10 @@
 import { Button, InputGroup, Navbar } from '@blueprintjs/core';
 import { InjectedProps } from '@jaredpalmer/after';
-import { V1Pod, V1PodList, V1ReplicaSetList, V1Service, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
+import { V1DeploymentList, V1Pod, V1PodList, V1ReplicaSetList, V1Service, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
-import React, { Component, SyntheticEvent } from 'react';
+import React, { Component } from 'react';
+import { DeploymentTable } from './components/DeploymentTable';
 import { PodTable } from './components/PodTable';
 import { ReplicaSetTable } from './components/ReplicaSetTable';
 import { ServiceTable } from './components/ServiceTable';
@@ -12,7 +13,6 @@ import S from './HomePage.less';
 import logo from './react.svg';
 import { InitialCtx } from './routes';
 import { kubeApi } from './services/kube';
-import { makeQuery } from './services/utils';
 
 class Home extends Component<Home.Props, {
   urlYaml: string;
@@ -29,7 +29,8 @@ class Home extends Component<Home.Props, {
     const serviceList = await api.services().list();
     const replicaSetList = await api.replicaSets().list();
     const statefulSetList = await api.statefulSets().list();
-    return { podList, serviceList, replicaSetList, statefulSetList, };
+    const deploymentList = await api.deployments().list();
+    return { podList, serviceList, replicaSetList, statefulSetList, deploymentList };
   }
 
   constructor(props: Home.Props) {
@@ -41,7 +42,7 @@ class Home extends Component<Home.Props, {
 
   private async getYaml(url: string) {
     // const txtYaml = await fetch(`/ncc/api/content${makeQuery({ url })}`).then((r) => r.text());
-    const txtYaml = await fetch(url).then((r) => r.text());
+    const txtYaml = await fetch(`${url}?${Date.now()}`).then((r) => r.text());
     return yaml.loadAll(txtYaml);
   }
 
@@ -113,12 +114,43 @@ class Home extends Component<Home.Props, {
     }
   }
 
+  renderPodList() {
+    const {
+      podList,
+    } = this.props;
+    return podList && (
+      <PodTable
+        pods={podList}
+        onDelete={(pod) => this.handlePodDelete(pod as any)}
+        onLog={async (pod) => {
+          if (this.api) {
+            const logs = await this.api.pods().log(pod as any, {follow: true});
+            console.log(logs);
+          }
+        }}
+      />
+    );
+  }
+
+  renderServiceList() {
+    const {
+      serviceList,
+    } = this.props;
+    return serviceList && (
+      <ServiceTable
+        list={serviceList}
+        onDelete={(service) => this.handlePodDelete(service as any)}
+      />
+    );
+  }
+
   render() {
     const {
       podList,
       serviceList,
       replicaSetList,
       statefulSetList,
+      deploymentList,
     } = this.props;
     const {
       urlYaml,
@@ -137,13 +169,15 @@ class Home extends Component<Home.Props, {
           <Button text="Update" onClick={this.handleUpdate}/>
         </div>
         <h4>Pods</h4>
-        {podList && <PodTable pods={podList} onDelete={this.handlePodDelete}/>}
+        {this.renderPodList()}
         <h4>Services</h4>
-        {serviceList && <ServiceTable serviceList={serviceList} onDelete={this.handleServiceDelete}/>}
+        {this.renderServiceList()}
         <h4>Replica sets</h4>
         {replicaSetList && <ReplicaSetTable replicaSetList={replicaSetList}/>}
         <h4>Stateful sets</h4>
         {statefulSetList && <StatefullSetTable statefulSetList={statefulSetList}/>}
+        <h4>Deployments</h4>
+        {deploymentList && <DeploymentTable list={deploymentList} onDelete={() => {}}/>}
       </div>
     );
   }
@@ -159,6 +193,7 @@ namespace Home {
     serviceList: V1ServiceList;
     replicaSetList: V1ReplicaSetList;
     statefulSetList: V1StatefulSetList;
+    deploymentList: V1DeploymentList;
   };
 
   export type InitialProps = InitialCtx & OwnProps;

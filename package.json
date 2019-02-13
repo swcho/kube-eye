@@ -15,6 +15,7 @@
     "@blueprintjs/table": "^3.4.1",
     "@jaredpalmer/after": "https://github.com/swcho/after.js#custom",
     "@kubernetes/client-node": "https://github.com/swcho/javascript#custom",
+    "copy-to-clipboard": "^3.0.8",
     "es6-promise": "^4.2.5",
     "express": "^4.16.2",
     "http-proxy-middleware": "^0.19.1",

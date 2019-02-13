@@ -1,47 +1,73 @@
-
-import { Button, ButtonGroup } from '@blueprintjs/core';
-import { Cell, Column, Table } from '@blueprintjs/table';
+import { Cell, Column } from '@blueprintjs/table';
 import { V1Service, V1ServiceList } from '@kubernetes/client-node';
 import * as React from 'react';
+import { KubeObjectTable } from './KubeObjectTable';
+
+const renderClusterIP = (items: V1Service[]) => (index: number) => {
+  const item = items[index];
+  return (
+    <Cell>{item.spec.clusterIP}</Cell>
+  );
+};
+
+const renderExternalIP = (items: V1Service[]) => (index: number) => {
+  const item = items[index];
+  const {
+    status: {
+      loadBalancer
+    },
+  } = item;
+  return (
+    <Cell>{
+      loadBalancer && loadBalancer.ingress && loadBalancer.ingress.map((ing) => {
+        return ing.ip;
+      })
+    }</Cell>
+  );
+};
+
+const renderPorts = (items: V1Service[]) => (index: number) => {
+  const item = items[index];
+  const {
+    spec: {
+      ports,
+    }
+  } = item;
+  return (
+    <Cell>{ports.map((p) => p.nodePort ? `${p.targetPort}:${p.nodePort}/${p.protocol}` : `${p.targetPort}`)}</Cell>
+  );
+};
 
 export class ServiceTable extends React.Component<ServiceTable.Props> {
-  static renderName = (pods: V1Service[]) => (index: number) => {
-    return (
-      <Cell>{pods[index].metadata.name}</Cell>
-    );
-  }
 
-  static renderButtons = ({serviceList, onDelete}: ServiceTable.Props) => (index: number) => {
-    const service = serviceList.items[index];
+  render() {
+    const {
+      list,
+    } = this.props;
+    console.log(list.items);
     return (
-      <Cell>
-        <React.Fragment>
-          <ButtonGroup>
-            <Button small={true} icon="trash" onClick={() => onDelete(service)}/>
-          </ButtonGroup>
-        </React.Fragment>
-      </Cell>
+      <KubeObjectTable
+        {...this.props}
+      >
+        <Column
+          name="Cluster IP"
+          cellRenderer={renderClusterIP(list.items)}
+        />
+        <Column
+          name="External IP"
+          cellRenderer={renderExternalIP(list.items)}
+        />
+        <Column
+          name="Port(S)"
+          cellRenderer={renderPorts(list.items)}
+        />
+      </KubeObjectTable>
     );
   }
-  render() {
-      const {
-        serviceList,
-      } = this.props;
-      return (
-        <Table numRows={serviceList.items.length}>
-          <Column name="Name" cellRenderer={ServiceTable.renderName(serviceList.items)}/>
-          <Column
-            name=""
-            cellRenderer={ServiceTable.renderButtons(this.props)}
-          />
-        </Table>
-      );
-    }
 }
 
 export namespace ServiceTable {
   export type Props = {
-    serviceList: V1ServiceList;
-    onDelete: (pod: V1Service) => void;
-  };
+    list: V1ServiceList;
+  } & KubeObjectTable.Events;
 }
