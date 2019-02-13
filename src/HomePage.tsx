@@ -130,12 +130,14 @@ class Home extends Component<Home.Props, {
     await api.del(obj);
   }
 
+  private podTable: PodTable | undefined | null;
   renderPodList() {
     const {
       podList,
     } = this.props;
     return podList && (
       <PodTable
+        ref={ref => this.podTable = ref}
         list={podList}
         onDelete={this.handleDelete('Pod')}
         onLog={(podForLog) => this.setState({ podForLog })}
@@ -261,10 +263,12 @@ class Home extends Component<Home.Props, {
       <ExecView
         api={this.api}
         pod={podForExec}
+        containerName={this.podTable ? this.podTable.getSelectedContainerName(podForExec) : ''}
         onClose={() => this.setState({ podForExec: undefined })}
       />
     );
   }
+
   render() {
     const {
       txtYaml,

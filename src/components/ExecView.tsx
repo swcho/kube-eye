@@ -3,7 +3,6 @@ import { V1Pod } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as React from 'react';
 import { Terminal } from 'xterm';
-import { fit } from 'xterm/lib/addons/fit/fit';
 import { kubeApi } from '../services/kube';
 
 // import '../../node_modules/xterm/src/xterm.css';
@@ -20,12 +19,17 @@ function b64_to_utf8(str: string) {
 class ExecView extends React.Component<ExecView.Props> {
   private elXterm: HTMLDivElement | undefined | null;
   render() {
-    const { onClose } = this.props;
+    const {
+      pod,
+      containerName: cotainerName,
+      onClose
+    } = this.props;
     return (
       <div>
         <Overlay isOpen={true} onOpened={this.handleOpened}>
           <div className={S.ExecView}>
             <div className={S.inner}>
+              <div className={S.name}>{cotainerName}</div>
               <div className={S.terminal} ref={(el) => (this.elXterm = el)} />
               <Button onClick={onClose}>Close</Button>
             </div>
@@ -36,7 +40,7 @@ class ExecView extends React.Component<ExecView.Props> {
   }
 
   handleOpened = async () => {
-    const { api, pod } = this.props;
+    const { api, pod, containerName } = this.props;
     if (!api || !this.elXterm) {
       return;
     }
@@ -51,11 +55,10 @@ class ExecView extends React.Component<ExecView.Props> {
       });
       xterm.open(this.elXterm);
 
-      const container = pod.spec.containers[0].name;
       const ws = api.pods().exec(
         pod,
         {
-          container,
+          container: containerName,
           command: ['/bin/sh', '-i'],
           stdin: true,
           stdout: true,
@@ -103,6 +106,7 @@ export namespace ExecView {
   export type Props = {
     api: ReturnType<typeof kubeApi>;
     pod: V1Pod;
+    containerName: string;
     onClose: () => void;
   };
 }
