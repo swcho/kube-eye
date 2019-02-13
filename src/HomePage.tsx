@@ -1,6 +1,6 @@
 import { Navbar } from '@blueprintjs/core';
 import { Ctx, InjectedProps } from '@jaredpalmer/after';
-import { V1Pod, V1PodList, V1ReplicaSetList, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
+import { V1Pod, V1PodList, V1ReplicaSetList, V1Service, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
@@ -29,9 +29,15 @@ class Home extends Component<Home.Props> {
     return { podList, serviceList, replicaSetList, statefulSetList, };
   }
 
-  private onPodDelete = async (pod: V1Pod) => {
+  private handlePodDelete = async (pod: V1Pod) => {
     if (this.api) {
       await this.api.pods().del(pod);
+    }
+  }
+
+  private handleServiceDelete = async (service: V1Service) => {
+    if (this.api) {
+      await this.api.services().del(service);
     }
   }
 
@@ -47,9 +53,9 @@ class Home extends Component<Home.Props> {
       <div className={S.Home}>
         <Navbar/>
         <h4>Pods</h4>
-        {podList && <PodTable pods={podList} onDelete={this.onPodDelete}/>}
+        {podList && <PodTable pods={podList} onDelete={this.handlePodDelete}/>}
         <h4>Services</h4>
-        {serviceList && <ServiceTable serviceList={serviceList}/>}
+        {serviceList && <ServiceTable serviceList={serviceList} onDelete={this.handleServiceDelete}/>}
         <h4>Replica sets</h4>
         {replicaSetList && <ReplicaSetTable replicaSetList={replicaSetList}/>}
         <h4>Stateful sets</h4>
