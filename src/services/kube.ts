@@ -33,7 +33,9 @@ const CRUD = <T extends KubeObject>(baseUrl: string, config: RequestInit = {}) =
         config.headers = {};
       }
       config.headers['Content-Type'] = 'application/json';
-      return fetch(baseUrl, { method: 'POST', body: JSON.stringify(item), ...config }).then<T>((r) => r.json());
+      return fetch(
+        baseUrl,
+        { method: 'POST', body: JSON.stringify(item), ...config }).then<T>((r) => r.json());
     },
     update: (item: T) => {
       // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#patch-operations
@@ -41,10 +43,14 @@ const CRUD = <T extends KubeObject>(baseUrl: string, config: RequestInit = {}) =
         config.headers = {};
       }
       config.headers['Content-Type'] = 'application/strategic-merge-patch+json';
-      return fetch(`${baseUrl}/${item.metadata.name}`, { method: 'PATCH', ...config }).then<T>((r) => r.json());
+      return fetch(
+        `${baseUrl}/${item.metadata.name}`,
+        { method: 'PATCH', body: JSON.stringify(item), ...config }).then<T>((r) => r.json());
     },
     del: (item: T) => {
-      return fetch(`${baseUrl}/${item.metadata.name}`, { method: 'DELETE', ...config }).then<T>((r) => r.json());
+      return fetch(
+        `${baseUrl}/${item.metadata.name}`,
+        { method: 'DELETE', ...config }).then<T>((r) => r.json());
     },
   };
 };
