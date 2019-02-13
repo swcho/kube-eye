@@ -22,11 +22,13 @@ const renderExternalIP = (items: V1Service[]) => (index: number) => {
   } = item;
   const port = ports && ports[0].targetPort || '';
   return (
-    <Cell>{
-      loadBalancer && loadBalancer.ingress && loadBalancer.ingress.map((ing, i) => {
-        return <a key={i} href={`http://${ing.ip}:${port}`} target="blank">{ing.ip}</a>;
-      })
-    }</Cell>
+    <Cell>
+      <React.Fragment>
+        {loadBalancer && loadBalancer.ingress && loadBalancer.ingress.map((ing, i) => {
+            return <a key={i} href={`http://${ing.ip}:${port}`} target="blank">{ing.ip}</a>;
+        })}
+      </React.Fragment>
+    </Cell>
   );
 };
 
@@ -48,23 +50,28 @@ export class ServiceTable extends React.Component<ServiceTable.Props> {
     const {
       list,
     } = this.props;
-    console.log(list.items);
+    const cols = [
+      <Column
+        key="cip"
+        name="Cluster IP"
+        cellRenderer={renderClusterIP(list.items)}
+      />,
+      <Column
+        key="eip"
+        name="External IP"
+        cellRenderer={renderExternalIP(list.items)}
+      />,
+      <Column
+        key="ports"
+        name="Port(S)"
+        cellRenderer={renderPorts(list.items)}
+      />,
+    ];
     return (
       <KubeObjectTable<V1Service>
         {...this.props}
       >
-        <Column
-          name="Cluster IP"
-          cellRenderer={renderClusterIP(list.items)}
-        />
-        <Column
-          name="External IP"
-          cellRenderer={renderExternalIP(list.items)}
-        />
-        <Column
-          name="Port(S)"
-          cellRenderer={renderPorts(list.items)}
-        />
+        {cols}
       </KubeObjectTable>
     );
   }

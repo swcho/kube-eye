@@ -168,8 +168,8 @@ class Home extends Component<Home.Props, {
         </div>
         <h4>Pods</h4>
         {this.renderPodList()}
-        {/* <h4>Services</h4>
-        {this.renderServiceList()} */}
+        <h4>Services</h4>
+        {this.renderServiceList()}
         <h4>Replica sets</h4>
         {replicaSetList && <ReplicaSetTable replicaSetList={replicaSetList}/>}
         <h4>Stateful sets</h4>
