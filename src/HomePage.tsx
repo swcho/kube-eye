@@ -1,6 +1,6 @@
 import { Button, InputGroup, Navbar, Overlay } from '@blueprintjs/core';
 import { InjectedProps } from '@jaredpalmer/after';
-import { V1DeploymentList, V1Pod, V1PodList, V1ReplicaSetList, V1Service, V1ServiceList, V1StatefulSetList } from '@kubernetes/client-node';
+import { V1Deployment, V1DeploymentList, V1Pod, V1PodList, V1ReplicaSet, V1ReplicaSetList, V1Service, V1ServiceList, V1StatefulSet, V1StatefulSetList } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
 import React, { Component } from 'react';
@@ -118,6 +118,24 @@ class Home extends Component<Home.Props, {
     }
   }
 
+  private handleReplicaSetDelete = async (replicaSet: V1ReplicaSet) => {
+    if (this.api) {
+      await this.api.replicaSets().del(replicaSet);
+    }
+  }
+
+  private handleStatefulSetDelete = async (statefulSet: V1StatefulSet) => {
+    if (this.api) {
+      await this.api.statefulSets().del(statefulSet);
+    }
+  }
+
+  private handleDeploymentDelete = async (deployment: V1Deployment) => {
+    if (this.api) {
+      await this.api.deployments().del(deployment);
+    }
+  }
+
   renderPodList() {
     const {
       podList,
@@ -139,7 +157,43 @@ class Home extends Component<Home.Props, {
     return serviceList && (
       <ServiceTable
         list={serviceList}
-        onDelete={(service) => this.handlePodDelete(service as any)}
+        onDelete={(service) => this.handleServiceDelete(service as any)}
+      />
+    );
+  }
+
+  renderReplicaSetList() {
+    const {
+      replicaSetList,
+    } = this.props;
+    return replicaSetList && (
+      <ReplicaSetTable
+        list={replicaSetList}
+        onDelete={(replicaSet) => this.handleReplicaSetDelete(replicaSet as any)}
+      />
+    );
+  }
+
+  renderStatefulSetList() {
+    const {
+      statefulSetList,
+    } = this.props;
+    return statefulSetList && (
+      <StatefullSetTable
+        list={statefulSetList}
+        onDelete={(statefulSet) => this.handleStatefulSetDelete(statefulSet as any)}
+      />
+    );
+  }
+
+  renderDeploymentList() {
+    const {
+      deploymentList,
+    } = this.props;
+    return deploymentList && (
+      <DeploymentTable
+        list={deploymentList}
+        onDelete={(deployment) => this.handleDeploymentDelete(deployment as any)}
       />
     );
   }
@@ -197,11 +251,11 @@ class Home extends Component<Home.Props, {
         <h4>Services</h4>
         {this.renderServiceList()}
         <h4>Replica sets</h4>
-        {replicaSetList && <ReplicaSetTable replicaSetList={replicaSetList}/>}
+        {this.renderReplicaSetList()}
         <h4>Stateful sets</h4>
-        {statefulSetList && <StatefullSetTable statefulSetList={statefulSetList}/>}
+        {this.renderStatefulSetList()}
         <h4>Deployments</h4>
-        {deploymentList && <DeploymentTable list={deploymentList} onDelete={() => console.log}/>}
+        {this.renderDeploymentList()}
         {this.renderLogView()}
         {this.renderExecView()}
       </div>

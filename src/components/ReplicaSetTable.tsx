@@ -1,7 +1,8 @@
 
-import { Cell, Column, Table } from '@blueprintjs/table';
+import { Cell } from '@blueprintjs/table';
 import { V1ReplicaSet, V1ReplicaSetList } from '@kubernetes/client-node';
 import * as React from 'react';
+import { KubeObjectTable } from './KubeObjectTable';
 
 export class ReplicaSetTable extends React.Component<ReplicaSetTable.Props> {
   static renderName = (pods: V1ReplicaSet[]) => (index: number) => {
@@ -12,20 +13,19 @@ export class ReplicaSetTable extends React.Component<ReplicaSetTable.Props> {
 
   render() {
       const {
-        replicaSetList,
+        list,
       } = this.props;
       return (
-        <div>
-          <Table numRows={replicaSetList.items.length}>
-            <Column name="Name" cellRenderer={ReplicaSetTable.renderName(replicaSetList.items)}/>
-          </Table>
-        </div>
+        <KubeObjectTable<V1ReplicaSet>
+          list={list}
+          {...this.props}
+        />
       );
     }
 }
 
 export namespace ReplicaSetTable {
   export type Props = {
-    replicaSetList: V1ReplicaSetList;
-  };
+    list: V1ReplicaSetList;
+  } & KubeObjectTable.Events<V1ReplicaSet>;
 }
