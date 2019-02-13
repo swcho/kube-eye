@@ -124,7 +124,7 @@ class Home extends Component<Home.Props, {
     } = this.props;
     return podList && (
       <PodTable
-        pods={podList}
+        list={podList}
         onDelete={(pod) => this.handlePodDelete(pod as any)}
         onLog={(podForLog) => this.setState({ podForLog })}
         onExec={(podForExec) => this.setState({ podForExec })}
