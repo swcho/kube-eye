@@ -37,7 +37,7 @@ const renderStringList = (strs: string[]) => {
 
 const renderLabels = <T extends KubeObject>(items: T[]) => (index: number) => {
   const labels = items[index].metadata.labels;
-  const contents = Object.keys(labels).map((key) => `${key}: ${labels[key]}`);
+  const contents = labels ? Object.keys(labels).map((key) => `${key}: ${labels[key]}`) : [];
   return (
     <Cell>{renderStringList(contents)}</Cell>
   );

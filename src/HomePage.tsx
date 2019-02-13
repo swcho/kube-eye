@@ -1,6 +1,6 @@
 import { Button, InputGroup, Navbar, Overlay } from '@blueprintjs/core';
 import { InjectedProps } from '@jaredpalmer/after';
-import { V1Deployment, V1DeploymentList, V1Pod, V1PodList, V1ReplicaSet, V1ReplicaSetList, V1Service, V1ServiceList, V1StatefulSet, V1StatefulSetList } from '@kubernetes/client-node';
+import { V1Deployment, V1DeploymentList, V1Pod, V1PodList, V1ReplicaSet, V1ReplicaSetList, V1Role, V1RoleBinding, V1RoleBindingList, V1RoleList, V1Service, V1ServiceAccount, V1ServiceAccountList, V1ServiceList, V1StatefulSet, V1StatefulSetList } from '@kubernetes/client-node';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import * as yaml from 'js-yaml';
 import React, { Component } from 'react';
@@ -9,6 +9,9 @@ import ExecView from './components/ExecView';
 import LogView from './components/LogView';
 import { PodTable } from './components/PodTable';
 import { ReplicaSetTable } from './components/ReplicaSetTable';
+import { RoleBindingTable } from './components/RoleBindingTable';
+import { RoleTable } from './components/RoleTable';
+import { ServiceAccountTable } from './components/ServiceAccountTable';
 import { ServiceTable } from './components/ServiceTable';
 import { StatefullSetTable } from './components/StatefulSetTable';
 import S from './HomePage.less';
@@ -34,7 +37,14 @@ class Home extends Component<Home.Props, {
     const replicaSetList = await api.replicaSets().list();
     const statefulSetList = await api.statefulSets().list();
     const deploymentList = await api.deployments().list();
-    return { podList, serviceList, replicaSetList, statefulSetList, deploymentList, namespace };
+    const serviceAccountList = await api.serviceAccounts().list();
+    const roleList = await api.roles().list();
+    const roleBindingList = await api.roleBindings().list();
+    return {
+      namespace,
+      podList, serviceList, replicaSetList, statefulSetList, deploymentList,
+      serviceAccountList, roleList, roleBindingList,
+    };
   }
 
   constructor(props: Home.Props) {
@@ -45,7 +55,6 @@ class Home extends Component<Home.Props, {
   }
 
   private async getYaml(url: string) {
-    // const txtYaml = await fetch(`/ncc/api/content${makeQuery({ url })}`).then((r) => r.text());
     const txtYaml = await fetch(`${url}?${Date.now()}`).then((r) => r.text());
     return yaml.loadAll(txtYaml);
   }
@@ -136,6 +145,24 @@ class Home extends Component<Home.Props, {
     }
   }
 
+  private handleServiceAccountDelete = async (serviceAccount: V1ServiceAccount) => {
+    if (this.api) {
+      await this.api.serviceAccounts().del(serviceAccount);
+    }
+  }
+
+  private handleRoleDelete = async (role: V1Role) => {
+    if (this.api) {
+      await this.api.roles().del(role);
+    }
+  }
+
+  private handleRoleBindingDelete = async (roleBinding: V1RoleBinding) => {
+    if (this.api) {
+      await this.api.roleBindings().del(roleBinding);
+    }
+  }
+
   renderPodList() {
     const {
       podList,
@@ -198,6 +225,42 @@ class Home extends Component<Home.Props, {
     );
   }
 
+  renderServiceAccountList() {
+    const {
+      serviceAccountList,
+    } = this.props;
+    return serviceAccountList && (
+      <ServiceAccountTable
+        list={serviceAccountList}
+        onDelete={(serviceAccount) => this.handleServiceAccountDelete(serviceAccount as any)}
+      />
+    );
+  }
+
+  renderRoleList() {
+    const {
+      roleList,
+    } = this.props;
+    return roleList && (
+      <RoleTable
+        list={roleList}
+        onDelete={(role) => this.handleRoleDelete(role as any)}
+      />
+    );
+  }
+
+  renderRoleBindingList() {
+    const {
+      roleBindingList,
+    } = this.props;
+    return roleBindingList && (
+      <RoleBindingTable
+        list={roleBindingList}
+        onDelete={(roleBinding) => this.handleRoleBindingDelete(roleBinding as any)}
+      />
+    );
+  }
+
   renderLogView() {
     const {
       podForLog,
@@ -226,11 +289,6 @@ class Home extends Component<Home.Props, {
 
   render() {
     const {
-      replicaSetList,
-      statefulSetList,
-      deploymentList,
-    } = this.props;
-    const {
       urlYaml,
     } = this.state;
     // console.log('render', this.props);
@@ -256,6 +314,14 @@ class Home extends Component<Home.Props, {
         {this.renderStatefulSetList()}
         <h4>Deployments</h4>
         {this.renderDeploymentList()}
+
+        <h4>Service accounts</h4>
+        {this.renderServiceAccountList()}
+        <h4>Roles</h4>
+        {this.renderRoleList()}
+        <h4>Role bindings</h4>
+        {this.renderRoleBindingList()}
+
         {this.renderLogView()}
         {this.renderExecView()}
       </div>
@@ -280,6 +346,9 @@ namespace Home {
     replicaSetList: V1ReplicaSetList;
     statefulSetList: V1StatefulSetList;
     deploymentList: V1DeploymentList;
+    serviceAccountList: V1ServiceAccountList;
+    roleList: V1RoleList;
+    roleBindingList: V1RoleBindingList;
   };
 
   export type InitialProps = InitialCtx & OwnProps;
