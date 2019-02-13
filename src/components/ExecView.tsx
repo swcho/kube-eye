@@ -5,6 +5,8 @@ import * as React from 'react';
 import { Terminal } from 'xterm';
 import { fit } from 'xterm/lib/addons/fit/fit';
 import { kubeApi } from '../services/kube';
+
+// import '../../node_modules/xterm/src/xterm.css';
 import S from './ExecView.less';
 
 function utf8_to_b64(str: string) {
@@ -46,22 +48,8 @@ class ExecView extends React.Component<ExecView.Props> {
       const xterm = new Terminal({
         cols,
         rows,
-        // cursorBlink: true,
-        // fontFamily: '\'Courier New\', \'Courier\', monospace',
-        // fontSize: 12,
-        // lineHeight: 1,
-        // theme: {
-        //   foreground: '#f0f0f0'
-        // }
       });
       xterm.open(this.elXterm);
-      xterm.write('Hi');
-      // xterm.cursorHidden = true;
-      // xterm.refresh(xterm.buffer.y, xterm.buffer.y);
-      // xterm.focus();
-      // fit(xterm);  // Fit the terminal when necessary
-      // xterm.reset();
-      // xterm.focus();
 
       const container = pod.spec.containers[0].name;
       const ws = api.pods().exec(
@@ -75,26 +63,6 @@ class ExecView extends React.Component<ExecView.Props> {
           tty: true
         },
       );
-
-      // const sizeViewport = () => {
-      //   if (!xterm.charMeasure.width) {
-      //     return;
-      //   }
-      //   var xtermViewport = element[0].getElementsByClassName("xterm-viewport")[0];
-      //   // character width * number of columns + space for a scrollbar
-      //   // TODO determine the max width of a scrollbar across browsers
-      //   xtermViewport.style.width = (term.charMeasure.width * cols + 17) + "px";
-      // };
-
-      // const sizeTerminal = () => {
-      //   xterm.resize(cols, rows);
-      //   sizeViewport();
-      //   if (ws.readyState === 1) {
-      //     ws.send(
-      //       '4' + window.btoa('{"Width":' + cols + ',"Height":' + rows + '}')
-      //     );
-      //   }
-      // };
 
       let alive;
       let first = true;
@@ -114,10 +82,6 @@ class ExecView extends React.Component<ExecView.Props> {
         }
         if (first) {
           first = false;
-          // spinner.addClass('hidden');
-          // button.addClass('hidden');
-          // xterm.cursorHidden = false;
-          // xterm.showCursor();
           xterm.focus();
         }
       };

@@ -167,22 +167,10 @@ export const kubeApi = (
           pod: V1Pod,
           params: ExecParams,
         ) {
-          // tslint:disable-next-line
-          // const url = `wss://${location.hostname}${baseUrl}/api/v1/namespaces/${namespace}/pods/${pod.metadata.name}/exec${makeQuery(params)}`;
-
           const url = `${baseUrl}/api/v1/namespaces/${namespace}/pods/${
             pod.metadata.name
           }/exec${makeQuery(params)}`;
-
-          // experimental for direct POST request without SPYD
-          // fetch(url, { method: 'POST', ...config})
-          //   .then((r) => r.text());
-
           const protocols = [
-            // 'v4.channel.k8s.io',
-            // 'v3.channel.k8s.io',
-            // 'v2.channel.k8s.io',
-            // 'channel.k8s.io'
             'base64.channel.k8s.io',
           ];
           return new WebSocket(url.replace(/^http/, 'ws'), protocols);
