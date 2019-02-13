@@ -27,9 +27,11 @@ const renderName = <T extends KubeObject>(items: T[]) => (index: number) => {
 
 const renderStringList = (strs: string[]) => {
   return (
-    <select>
-      {strs.map((str, i) => <option key={i}>{str}</option>)}
-    </select>
+    <React.Fragment>
+      <select>
+        {strs.map((str, i) => <option key={i}>{str}</option>)}
+      </select>
+    </React.Fragment>
   );
 };
 
@@ -37,7 +39,7 @@ const renderLabels = <T extends KubeObject>(items: T[]) => (index: number) => {
   const labels = items[index].metadata.labels;
   const contents = Object.keys(labels).map((key) => `${key}: ${labels[key]}`);
   return (
-    <Cell interactive={false} wrapText={false}>{renderStringList(contents)}</Cell>
+    <Cell>{renderStringList(contents)}</Cell>
   );
 };
 
